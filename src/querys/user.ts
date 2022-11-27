@@ -1,7 +1,7 @@
 import cryptoJs from 'crypto-js';
-import { ICreateUserPayload } from '../../../types/api';
+import { IUser } from '../../../types/api';
 
-export const getInsertUserQuery = (user: ICreateUserPayload) => {
+export const getInsertUserQuery = (user: IUser) => {
   const {
     id,
     password,
