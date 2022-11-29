@@ -1,3 +1,5 @@
+import { StatusCodes } from 'http-status-codes';
+
 export interface IApiResponse<T> {
   status: number;
   message: string;
@@ -13,4 +15,16 @@ export class ApiResponse<T> implements IApiResponse<T> {
     this.message = message;
     this.data = data;
   }
+
+  static badRequest = <T>(data?: T, message?: string) => {
+    return new ApiResponse(
+      StatusCodes.BAD_REQUEST,
+      message || '다시 요청해주세요.',
+      data || false
+    );
+  };
+
+  static unauthorized = () => {
+    return new ApiResponse(StatusCodes.UNAUTHORIZED, 'No authorized.', false);
+  };
 }

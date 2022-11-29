@@ -8,8 +8,11 @@ import {
   IUser,
   TypedRequestBody,
   ICheckExistsPayload,
+  ILoginPayload,
 } from '../../../types/api';
 import { ApiResponse } from '../api';
+import { refresh, sign } from '../jwt';
+import redisCli from '../redis';
 
 dotenv.config();
 
@@ -22,13 +25,15 @@ export const getUser = async (req: Request, res: Response) => {
     const {
       params: { id },
     } = req;
+
     const query = `SELECT * FROM User`;
     const where = `WHERE user_id = ${id}`;
     await connection.query(
       id ? `${query} ${where}` : query,
       (error, rows: IUser[], fields) => {
         try {
-          if (error || !rows.length)
+          if (error) throw error;
+          if (!rows.length)
             return res.send(
               new ApiResponse(
                 StatusCodes.NO_CONTENT,
@@ -46,9 +51,7 @@ export const getUser = async (req: Request, res: Response) => {
       }
     );
   } catch (error) {
-    res.send(
-      new ApiResponse(StatusCodes.BAD_REQUEST, '다시 요청 해주세요.', [])
-    );
+    res.send(ApiResponse.badRequest([]));
   }
 };
 
@@ -67,10 +70,7 @@ export const createUser = async (
       }
     );
   } catch (error) {
-    res.send({
-      status: StatusCodes.BAD_REQUEST,
-      message: '유저를 추가하지 못했습니다.',
-    });
+    res.send(ApiResponse.badRequest());
   }
 };
 
@@ -86,11 +86,7 @@ export const checkExists = async (
     const query = `SELECT * FROM User WHERE ${field} LIKE '%${value}%'`;
 
     await connection.query(query, (error, rows, fields) => {
-      if (error) {
-        return res.send(
-          new ApiResponse(StatusCodes.BAD_REQUEST, '이미 존재합니다.', true)
-        );
-      }
+      if (error) throw error;
 
       if (rows.length)
         return res.send(
@@ -100,8 +96,60 @@ export const checkExists = async (
       res.send(new ApiResponse(StatusCodes.OK, '사용 가능합니다.', false));
     });
   } catch (error) {
-    res.send(
-      new ApiResponse(StatusCodes.BAD_REQUEST, '다시 요청해주세요.', true)
-    );
+    res.send(ApiResponse.badRequest());
+  }
+};
+
+export const login = async (
+  req: TypedRequestBody<ILoginPayload>,
+  res: Response
+) => {
+  /** Login Flow
+   * 1. id, pw 를 req.body 로 받음.
+   * 비밀번호 생성할 때 만든 암호화 key는 서버, 클라이언트 공유
+   * 2. 암호화된 password를 복호화한다.
+   * 3. DB에서 id, pw를 조회한다.
+   * 3.1 False -> 로그인 실패
+   * 4. id를 value로 Access token을 생성한다.
+   * 5. id를 value로 Refresh token을 생성한다.
+   * 6. (user 정보, access token, refresh token) 을 반환한다.
+   */
+
+  try {
+    const {
+      body: { id, password },
+    } = req;
+    // const query = `SELECT * FROM User WHERE  LIKE '%${value}%'`;
+    const query = `SELECT * FROM User WHERE id = '${id}' AND password = '${password}'`;
+
+    await connection.query(query, async (error, rows, fields) => {
+      const isLogin = !!rows.length;
+      if (!isLogin)
+        return res.send(
+          new ApiResponse(
+            StatusCodes.UNAUTHORIZED,
+            '비밀번호가 틀렸습니다.',
+            {}
+          )
+        );
+
+      const [user] = rows;
+
+      const accessToken = await sign(user);
+      const refreshToken = await refresh();
+
+      // 발급한 refresh token을 redis에 key를 user의 id로 하여 저장.
+      redisCli.set(user.id, refreshToken);
+
+      // client에게 토큰 모두를 반환.
+      res.send(
+        new ApiResponse(StatusCodes.OK, '로그인 되었습니다.', {
+          accessToken,
+          refreshToken,
+        })
+      );
+    });
+  } catch (error) {
+    res.send(ApiResponse.badRequest({}));
   }
 };
