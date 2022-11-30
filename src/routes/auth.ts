@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { IUser } from '../../../types/api';
+import { IUser, IUserSchema } from '../../../types/api';
 import { ApiResponse } from '../api';
 import connection from '../init/mysql';
 import { getToken, refreshVerify, verify, sign } from '../jwt';
@@ -46,7 +46,7 @@ export const refresh = async (req: Request, res: Response) => {
     // 2. access token이 만료되고, refresh token은 만료되지 않은 경우 => 새 access token 발급.
     connection.query(
       `SELECT * FROM User WHERE id='${decodedRefreshToken.id}'`,
-      (error, rows: IUser[], field) => {
+      (error, rows: IUserSchema[], field) => {
         try {
           const [user] = rows;
           const newAccessToken = sign(user);

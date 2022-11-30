@@ -18,7 +18,7 @@ dotenv.config();
 
 const pickUser = (user: IUser[]) =>
   user.map((field) =>
-    _pick(field, ['id', 'name', 'phone', 'address', 'detailAddress'])
+    _pick(field, ['user_id', 'id', 'name', 'phone', 'address', 'detailAddress'])
   );
 export const getUser = async (req: Request, res: Response) => {
   try {
@@ -44,7 +44,9 @@ export const getUser = async (req: Request, res: Response) => {
 
           const user = pickUser(rows);
 
-          res.send(new ApiResponse(StatusCodes.OK, '유저 조회 완료.', user));
+          const data = user.length === 1 ? user[0] : user;
+
+          res.send(new ApiResponse(StatusCodes.OK, '유저 조회 완료.', data));
         } catch (error) {
           throw error;
         }

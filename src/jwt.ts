@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
-import { IUser } from '../../types/api';
+import { IUser, IUserSchema } from '../../types/api';
 import { ApiResponse } from './api';
 import { StatusCodes } from 'http-status-codes';
 import redisCli from './redis';
@@ -16,8 +16,8 @@ const getToken = (authorization: string) => authorization.split('Bearer ')[1];
 
 const secret = process.env.SECRET as string;
 
-const sign = (user: IUser) => {
-  const payload = { id: user.id };
+const sign = (user: IUserSchema) => {
+  const payload = { id: user.user_id };
 
   const accessToken = jwt.sign(payload, secret);
 
