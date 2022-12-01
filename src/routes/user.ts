@@ -28,6 +28,7 @@ export const getUser = async (req: Request, res: Response) => {
 
     const query = `SELECT * FROM User`;
     const where = `WHERE user_id = ${id}`;
+
     await connection.query(
       id ? `${query} ${where}` : query,
       (error, rows: IUser[], fields) => {

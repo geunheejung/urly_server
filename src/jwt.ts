@@ -19,7 +19,9 @@ const secret = process.env.SECRET as string;
 const sign = (user: IUserSchema) => {
   const payload = { id: user.user_id };
 
-  const accessToken = jwt.sign(payload, secret);
+  const accessToken = jwt.sign(payload, secret, {
+    expiresIn: '30m',
+  });
 
   return accessToken;
 };
@@ -68,19 +70,18 @@ const authJWT = (req: Request, res: Response, next: NextFunction) => {
     const {
       headers: { authorization },
     } = req;
-    if (!authorization) throw StatusCodes.UNAUTHORIZED;
+    if (!authorization) throw 'No authorization';
 
     const accessToken = getToken(authorization);
     const decoded = verify(accessToken);
 
-    if (!decoded.id) throw StatusCodes.UNAUTHORIZED;
+    if (!decoded.id) throw 'No decoded.id';
 
     req.userId = decoded.id;
     next();
   } catch (error) {
-    return res.send(
-      new ApiResponse(StatusCodes.UNAUTHORIZED, '다시 요청해주세요', false)
-    );
+    console.error('[authJWT] ', error);
+    return res.send(ApiResponse.unauthorized());
   }
 };
 
