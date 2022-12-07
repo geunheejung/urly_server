@@ -24,7 +24,11 @@ export class ApiResponse<T> implements IApiResponse<T> {
     );
   };
 
-  static unauthorized = () => {
-    return new ApiResponse(StatusCodes.UNAUTHORIZED, 'No authorized.', false);
+  static unauthorized = (message?: string) => {
+    return new ApiResponse(
+      StatusCodes.UNAUTHORIZED,
+      message || 'No authorized.',
+      false
+    );
   };
 }

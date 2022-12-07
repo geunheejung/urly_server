@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
 import _pick from 'lodash/pick';
 import { StatusCodes } from 'http-status-codes';
 import connection from '../init/mysql';
@@ -11,7 +12,7 @@ import {
   ILoginPayload,
 } from '../../../types/api';
 import { ApiResponse } from '../api';
-import { refresh, sign } from '../jwt';
+import { getToken, ITokenPayload, refresh, sign } from '../jwt';
 import redisCli from '../redis';
 
 dotenv.config();
@@ -154,5 +155,28 @@ export const login = async (
     });
   } catch (error) {
     res.send(ApiResponse.badRequest({}));
+  }
+};
+
+export const loggout = async (req: Request, res: Response) => {
+  try {
+    const {
+      headers: { authorization },
+    } = req;
+    if (!authorization) return res.send(ApiResponse.unauthorized());
+
+    const accessToken = getToken(authorization);
+    const { id } = jwt.decode(accessToken) as ITokenPayload;
+
+    const isExists = await redisCli.exists(id);
+
+    if (isExists) await redisCli.del(id);
+
+    res.send(new ApiResponse(StatusCodes.OK, 'loggout', true));
+    // redis에 등록된 refresh token 삭제
+  } catch (error) {
+    console.log(error);
+
+    res.send(ApiResponse.badRequest());
   }
 };
