@@ -56,6 +56,7 @@ export const refresh = async (req: Request, res: Response) => {
       (error, rows: IUserSchema[], field) => {
         try {
           const [user] = rows;
+
           const newAccessToken = sign(user);
 
           return res.send(

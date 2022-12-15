@@ -19,8 +19,6 @@ export const authJWT = (req: Request, res: Response, next: NextFunction) => {
     req.userId = decoded.id;
     next();
   } catch (error) {
-    console.log(`[authJWT] ${error}`);
-
     return res.send(ApiResponse.unauthorized(error as string));
   }
 };

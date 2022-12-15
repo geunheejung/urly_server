@@ -27,33 +27,31 @@ export const getUser = async (req: Request, res: Response) => {
       params: { id },
     } = req;
 
-    const query = `SELECT * FROM User`;
+    const all = `SELECT * FROM User`;
     const where = `WHERE user_id = ${id}`;
+    const query = id ? `${all} ${where}` : all;
 
-    await connection.query(
-      id ? `${query} ${where}` : query,
-      (error, rows: IUser[], fields) => {
-        try {
-          if (error) throw error;
-          if (!rows.length)
-            return res.send(
-              new ApiResponse(
-                StatusCodes.NO_CONTENT,
-                '유저를 찾지 못했습니다.',
-                []
-              )
-            );
+    await connection.query(query, (error, rows: IUser[], fields) => {
+      try {
+        if (error) throw error;
+        if (!rows.length)
+          return res.send(
+            new ApiResponse(
+              StatusCodes.NO_CONTENT,
+              '유저를 찾지 못했습니다.',
+              []
+            )
+          );
 
-          const user = pickUser(rows);
+        const user = pickUser(rows);
 
-          const data = user.length === 1 ? user[0] : user;
+        const data = user.length === 1 ? user[0] : user;
 
-          res.send(new ApiResponse(StatusCodes.OK, '유저 조회 완료.', data));
-        } catch (error) {
-          throw error;
-        }
+        res.send(new ApiResponse(StatusCodes.OK, '유저 조회 완료.', data));
+      } catch (error) {
+        throw error;
       }
-    );
+    });
   } catch (error) {
     res.send(ApiResponse.badRequest([]));
   }
